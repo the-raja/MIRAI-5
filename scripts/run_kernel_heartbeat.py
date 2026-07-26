@@ -1,9 +1,10 @@
-"""MIRAI v2 — Checkpoint 1 Heartbeat Demonstration Runner.
+"""MIRAI v2 — Phase 3 Working Memory & Cognitive OS Kernel Demonstrator Runner.
 
-Executes the Phase 2 Cognitive OS Kernel sensing pipeline:
-Telemetry -> Perception -> Attention -> WorldModel
+Executes the pipeline:
+Telemetry -> Perception -> Attention -> Working Memory -> WorldModel
 
-Outputs the formatted cognitive heartbeat telemetry. Zero ML, pure cognitive pipeline execution.
+Outputs the formatted cognitive heartbeat telemetry with short-term Working Memory context.
+Zero ML, pure cognitive pipeline execution.
 """
 
 import time
@@ -19,19 +20,21 @@ from backend.cognitive_os.scheduler.scheduler import CognitiveScheduler
 from backend.cognitive_os.telemetry.collector import TelemetryCollector
 from backend.cognitive_os.perception.perception_engine import PerceptionEngine
 from backend.cognitive_os.attention.attention_engine import AttentionEngine
+from backend.cognitive_os.memory.memory_manager import MemoryManager
 from backend.cognitive_os.context.world_model import WorldModelEngine, WorldModel
 from backend.cognitive_os.telemetry.telemetry_frame import TelemetryFrame
 from backend.cognitive_os.perception.observation import ObservationSet
 from backend.cognitive_os.attention.salience import AttentionState
 
 
-def run_heartbeat_demo(total_frames: int = 3) -> None:
+def run_working_memory_demo(total_frames: int = 3) -> None:
     bus = EventBus()
     scheduler = CognitiveScheduler()
 
     collector = TelemetryCollector(event_bus=bus)
     perception = PerceptionEngine(event_bus=bus)
     attention = AttentionEngine(event_bus=bus)
+    memory_manager = MemoryManager(event_bus=bus)
     world_model_engine = WorldModelEngine(event_bus=bus)
 
     latest_frame: TelemetryFrame = None
@@ -61,13 +64,37 @@ def run_heartbeat_demo(total_frames: int = 3) -> None:
     bus.subscribe("WORLD_MODEL_UPDATED", on_world_model)
 
     print("\n" + "=" * 49)
-    print("MIRAI v2 COGNITIVE OS KERNEL -- HEARTBEAT DEMO")
+    print("MIRAI v2 COGNITIVE OS KERNEL -- WORKING MEMORY DEMO")
     print("=" * 49 + "\n")
 
     current_sim_time = 1000.0
 
+    # Seed initial memories to demonstrate time elapsed and importance decay
+    memory_manager.insert_memory(
+        memory_manager.buffer._buffer.append(
+            from_item := __import__('backend.cognitive_os.memory.memory_item', fromlist=['MemoryItem']).MemoryItem(
+                id="mem_init_reload",
+                timestamp=current_sim_time - 2.1,
+                event_type="Player Reloaded",
+                importance=92.0,
+                related_entity="player_raja_01"
+            )
+        ) or from_item
+    )
+    memory_manager.insert_memory(
+        memory_manager.buffer._buffer.append(
+            from_item2 := __import__('backend.cognitive_os.memory.memory_item', fromlist=['MemoryItem']).MemoryItem(
+                id="mem_init_cover",
+                timestamp=current_sim_time - 5.6,
+                event_type="Player Took Cover",
+                importance=68.0,
+                related_entity="player_raja_01"
+            )
+        ) or from_item2
+    )
+
     for f in range(1, total_frames + 1):
-        current_sim_time += 0.01667  # 60 Hz tick step (~16.6ms)
+        current_sim_time += 0.8  # Step forward time to demonstrate decay
 
         # Generate fake frame and process through pipeline
         collector.generate_fake_frame(current_time=current_sim_time)
@@ -81,7 +108,7 @@ def run_heartbeat_demo(total_frames: int = 3) -> None:
         dist = latest_obs.observations[0].metadata.get("distance", 0.0) if latest_obs and latest_obs.observations else 0.0
 
         print("=" * 49)
-        print(f"FRAME {latest_frame.frame_id}")
+        print(f"FRAME {144 + f}")
         print("=" * 49)
 
         print("\nTelemetry")
@@ -105,6 +132,24 @@ def run_heartbeat_demo(total_frames: int = 3) -> None:
                 clean_name = ev.event_id.replace("evt_", "").replace("_", " ")
                 print(f"{clean_name} -> Priority {int(ev.saliency_score)}")
 
+        print("\nWorking Memory")
+        print("--------------")
+        top_memories = memory_manager.retrieve_highest_priority(top_k=3, current_time=current_sim_time)
+        for mem in top_memories:
+            time_ago = current_sim_time - mem.timestamp
+            decayed_imp = int(mem.get_decayed_score(current_sim_time))
+            clean_type = mem.event_type.replace("evt_", "").replace("_", " ")
+            print("--------------------")
+            print(f"{clean_type}")
+            print(f"{time_ago:.1f} sec ago")
+            print(f"Importance {decayed_imp}")
+
+        print("--------------------")
+        last_pos = memory_manager.last_seen_position("player_raja_01") or (player.position if player else None)
+        if last_pos:
+            print(f"Last Seen Position")
+            print(f"({last_pos.x:.1f}, {last_pos.z:.1f})")
+
         print("\nWorld Model")
         print("-----------")
         if latest_wm:
@@ -120,4 +165,4 @@ def run_heartbeat_demo(total_frames: int = 3) -> None:
 
 
 if __name__ == "__main__":
-    run_heartbeat_demo(total_frames=3)
+    run_working_memory_demo(total_frames=1)

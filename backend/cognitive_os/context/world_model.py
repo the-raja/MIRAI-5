@@ -1,6 +1,7 @@
 """World Model data structures and belief maintenance engine.
 
 Maintains current spatial beliefs, line-of-sight visibility, estimated player positions, and cover node states.
+Updated via Working Memory and Telemetry streams.
 Contains NO ML predictions — purely maintains current spatial world understanding.
 """
 
@@ -8,7 +9,7 @@ from typing import Dict, List, Any, Optional
 from pydantic import BaseModel, Field
 from backend.cognitive_os.telemetry.telemetry_frame import Vector3Data, TelemetryFrame
 from backend.cognitive_os.attention.salience import AttentionState
-from backend.cognitive_os.perception.observation import ObservationSet
+from backend.cognitive_os.memory.memory_item import MemoryItem
 from backend.cognitive_os.event_bus.event_bus import EventBus
 from backend.cognitive_os.event_bus.events import Event
 
@@ -51,6 +52,7 @@ class WorldModelEngine:
         if self.event_bus:
             self.event_bus.subscribe("TELEMETRY_FRAME", self._on_telemetry_frame)
             self.event_bus.subscribe("ATTENTION_STATE", self._on_attention_state)
+            self.event_bus.subscribe("WORKING_MEMORY_UPDATED", self._on_working_memory_updated)
 
     def _on_telemetry_frame(self, event: Event) -> None:
         if isinstance(event.payload, TelemetryFrame):
@@ -59,6 +61,10 @@ class WorldModelEngine:
     def _on_attention_state(self, event: Event) -> None:
         if isinstance(event.payload, AttentionState):
             self.update_from_attention(event.payload)
+
+    def _on_working_memory_updated(self, event: Event) -> None:
+        if isinstance(event.payload, list):
+            self.update_from_working_memory(event.payload)
 
     def update_from_telemetry(self, frame: TelemetryFrame) -> WorldModel:
         """Update spatial beliefs based on latest physical frame telemetry."""
@@ -100,14 +106,23 @@ class WorldModelEngine:
         return self.world_model
 
     def update_from_attention(self, att_state: AttentionState) -> WorldModel:
-        """Update beliefs based on attention saliency events (e.g. player disappearing behind cover)."""
+        """Update beliefs based on attention saliency events."""
         for event in att_state.salient_events:
             if event.event_id == "evt_PlayerEnteredCover" and att_state.primary_target_id:
-                # If player entered cover, estimate position near closest cover node
                 pid = att_state.primary_target_id
                 if pid in self.world_model.estimated_player_positions:
-                    # Estimate position near Cover_A if lost line of sight
                     self.world_model.estimated_player_positions[pid] = self.world_model.cover_nodes[0].position
+
+        if self.event_bus:
+            self._publish_update()
+
+        return self.world_model
+
+    def update_from_working_memory(self, memories: List[MemoryItem]) -> WorldModel:
+        """Update spatial beliefs from Working Memory items."""
+        for mem in memories:
+            if mem.event_type == "PlayerEnteredCover" and mem.related_entity:
+                self.world_model.estimated_player_positions[mem.related_entity] = self.world_model.cover_nodes[0].position
 
         if self.event_bus:
             self._publish_update()
