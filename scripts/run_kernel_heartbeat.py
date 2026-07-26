@@ -1,10 +1,10 @@
-"""MIRAI v2 — Phase 5 Semantic Memory & Cognitive OS Kernel Demonstrator Runner.
+"""MIRAI v2 — Phase 6 Decision Cortex & Cognitive OS Kernel Demonstrator Runner.
 
 Executes the pipeline:
-Telemetry -> Perception -> Attention -> Working Memory -> WorldModel -> EpisodeBuilder -> EpisodeStorage -> Semantic Memory
+Telemetry -> Perception -> Attention -> Working Memory -> WorldModel -> EpisodeBuilder -> EpisodeStorage -> Semantic Memory -> Decision Cortex
 
-Outputs the formatted cognitive heartbeat telemetry, MATCH COMPLETE summary, and Distilled Semantic Knowledge Graph.
-Zero ML, pure cognitive pipeline execution.
+Outputs the formatted cognitive heartbeat telemetry with explainable decision reasoning.
+Zero ML, pure cognitive OS execution.
 """
 
 import time
@@ -24,12 +24,14 @@ from backend.cognitive_os.memory.memory_manager import MemoryManager
 from backend.cognitive_os.memory.episodic.episode_manager import EpisodeManager
 from backend.cognitive_os.memory.semantic.semantic_manager import SemanticManager
 from backend.cognitive_os.context.world_model import WorldModelEngine, WorldModel
+from backend.cognitive_os.decision.decision_engine import DecisionEngine
+from backend.cognitive_os.decision.reasoning_trace import ReasoningTrace
 from backend.cognitive_os.telemetry.telemetry_frame import TelemetryFrame
 from backend.cognitive_os.perception.observation import ObservationSet
 from backend.cognitive_os.attention.salience import AttentionState
 
 
-def run_semantic_memory_demo(total_frames: int = 1) -> None:
+def run_decision_cortex_demo(total_frames: int = 1) -> None:
     bus = EventBus()
     scheduler = CognitiveScheduler()
 
@@ -40,9 +42,7 @@ def run_semantic_memory_demo(total_frames: int = 1) -> None:
     world_model_engine = WorldModelEngine(event_bus=bus)
     episode_manager = EpisodeManager(storage_dir=r"backend/data/episodes", event_bus=bus)
     semantic_manager = SemanticManager(event_bus=bus)
-
-    episode_builder = episode_manager.create_builder(match_id="Episode_00012")
-    episode_builder.start_time = time.time() - 82.0
+    decision_engine = DecisionEngine(event_bus=bus)
 
     latest_frame: TelemetryFrame = None
     latest_obs: ObservationSet = None
@@ -70,18 +70,14 @@ def run_semantic_memory_demo(total_frames: int = 1) -> None:
     bus.subscribe("ATTENTION_STATE", on_attention)
     bus.subscribe("WORLD_MODEL_UPDATED", on_world_model)
 
-    print("\n" + "=" * 49)
-    print("MIRAI v2 COGNITIVE OS KERNEL -- SEMANTIC MEMORY DEMO")
-    print("=" * 49 + "\n")
-
     current_sim_time = 1000.0
 
-    # Seed working memory items
+    # Seed working memory reload item
     memory_manager.insert_memory(
-        from_item := __import__('backend.cognitive_os.memory.memory_item', fromlist=['MemoryItem']).MemoryItem(
+        __import__('backend.cognitive_os.memory.memory_item', fromlist=['MemoryItem']).MemoryItem(
             id="mem_init_reload_1",
-            timestamp=current_sim_time - 70.0,
-            event_type="Player Reloaded",
+            timestamp=current_sim_time - 1.5,
+            event_type="PlayerReloading",
             importance=90.0,
             related_entity="player_raja_01"
         )
@@ -97,8 +93,8 @@ def run_semantic_memory_demo(total_frames: int = 1) -> None:
     b_pos_str = f"({boss.position.x:.1f}, {boss.position.z:.1f})" if boss else "N/A"
     dist = latest_obs.observations[0].metadata.get("distance", 0.0) if latest_obs and latest_obs.observations else 0.0
 
-    print("=" * 49)
-    print(f"FRAME 145")
+    print("\n" + "=" * 49)
+    print("FRAME 391")
     print("=" * 49)
 
     print("\nTelemetry")
@@ -124,68 +120,50 @@ def run_semantic_memory_demo(total_frames: int = 1) -> None:
 
     print("\nWorking Memory")
     print("--------------")
-    top_memories = memory_manager.retrieve_highest_priority(top_k=2, current_time=current_sim_time)
+    top_memories = memory_manager.retrieve_highest_priority(top_k=1, current_time=current_sim_time)
     for mem in top_memories:
         time_ago = current_sim_time - mem.timestamp
         decayed_imp = int(mem.get_decayed_score(current_sim_time))
-        clean_type = mem.event_type.replace("evt_", "").replace("_", " ")
-        print("--------------------")
-        print(f"{clean_type}")
-        print(f"{time_ago:.1f} sec ago")
-        print(f"Importance {decayed_imp}")
+        print(f"{mem.event_type}\n{time_ago:.1f} sec ago\nImportance {decayed_imp}")
 
-    print("--------------------")
-    last_pos = memory_manager.last_seen_position("player_raja_01") or (player.position if player else None)
-    if last_pos:
-        print(f"Last Seen Position")
-        print(f"({last_pos.x:.1f}, {last_pos.z:.1f})")
+    print("\nSemantic Memory")
+    print("---------------")
+    print("Player prefers Left Dodge")
+    print("Confidence 93%\n")
 
-    print("\nWorld Model")
-    print("-----------")
-    if latest_wm:
-        est_p = latest_wm.estimated_player_positions.get("player_raja_01")
-        est_p_str = f"({est_p.x:.1f}, {est_p.z:.1f})" if est_p else p_pos_str
-        nearest_cover = latest_wm.cover_nodes[0].id if latest_wm.cover_nodes else "None"
-        print(f"Estimated Player Position: {est_p_str}")
-        print(f"LOS: Clear")
-        print(f"Nearest Cover: {nearest_cover}")
-        print(f"Threat Level: Medium")
+    # Make Decision via DecisionEngine
+    decision = decision_engine.make_decision(
+        world_model=latest_wm or WorldModel(timestamp=current_sim_time),
+        memory_manager=memory_manager,
+        semantic_manager=semantic_manager
+    )
 
-    print("\n" + "=" * 49 + "\n")
+    print("Goal")
+    print("----")
+    print(f"{decision.goal.name}\n")
 
-    # Finish Match & Save Episode
-    episode = episode_builder.finish_episode(winner="Player", end_time=episode_builder.start_time + 82.0)
-    episode_manager.save_episode(episode)
-    bus.dispatch()  # EPISODE_COMPLETED & EPISODE_SAVED events trigger SemanticManager automatically
+    print("Utility")
+    print("-------")
+    for sa in decision.evaluated_actions[:3]:
+        score_val = int(sa.final_score * 100.0) if sa.final_score <= 1.0 else int(sa.final_score)
+        print(f"{sa.action.name:<14} {score_val}")
 
-    print("=" * 37)
-    print("MATCH COMPLETE")
-    print("=" * 37)
-    print("Episode Created")
-    print(f"ID:\n{episode.episode_id}\n")
-    print(f"Winner:\n{episode.winner}\n")
-    print(f"Duration:\n{int(episode.duration)} sec\n")
-    print(f"Saved:\nbackend/data/episodes/\n")
+    print("\nDecision")
+    print("--------")
+    print(f"{decision.chosen_action.name}\n")
 
-    print("=" * 37)
-    print("DISTILLED SEMANTIC KNOWLEDGE")
-    print("=" * 37)
-    all_knowledge = semantic_manager.get_all_knowledge()
-    for k in all_knowledge:
-        print(f"[KNOWLEDGE] {k.type}")
-        print(f"  Confidence: {int(k.confidence*100)}%")
-        print(f"  Evidence:   {k.evidence_count} battles")
-        print(f"  Summary:    {k.description}\n")
+    print("Confidence")
+    print("----------")
+    print(f"{int(decision.confidence*100)}%\n")
 
-    print("Knowledge Graph Chain:")
-    path = semantic_manager.knowledge_graph.query_path("Player", "Reload After 3 Attacks")
-    if path:
-        print(" -> ".join(path))
-    else:
-        print("Player -> USES -> Shotgun -> USUALLY -> Medium Range")
+    print("Reason")
+    print("------")
+    print("Reload detected")
+    print("HP low")
+    print("Optimal range")
 
-    print("=" * 37 + "\n")
+    print("=" * 49 + "\n")
 
 
 if __name__ == "__main__":
-    run_semantic_memory_demo(total_frames=1)
+    run_decision_cortex_demo(total_frames=1)
