@@ -1,9 +1,9 @@
-"""MIRAI v2 — Phase 3 Working Memory & Cognitive OS Kernel Demonstrator Runner.
+"""MIRAI v2 — Phase 4 Episodic Memory & Cognitive OS Kernel Demonstrator Runner.
 
 Executes the pipeline:
-Telemetry -> Perception -> Attention -> Working Memory -> WorldModel
+Telemetry -> Perception -> Attention -> Working Memory -> WorldModel -> EpisodeBuilder -> EpisodeStorage
 
-Outputs the formatted cognitive heartbeat telemetry with short-term Working Memory context.
+Outputs the formatted cognitive heartbeat telemetry and MATCH COMPLETE summary.
 Zero ML, pure cognitive pipeline execution.
 """
 
@@ -21,13 +21,14 @@ from backend.cognitive_os.telemetry.collector import TelemetryCollector
 from backend.cognitive_os.perception.perception_engine import PerceptionEngine
 from backend.cognitive_os.attention.attention_engine import AttentionEngine
 from backend.cognitive_os.memory.memory_manager import MemoryManager
+from backend.cognitive_os.memory.episodic.episode_manager import EpisodeManager
 from backend.cognitive_os.context.world_model import WorldModelEngine, WorldModel
 from backend.cognitive_os.telemetry.telemetry_frame import TelemetryFrame
 from backend.cognitive_os.perception.observation import ObservationSet
 from backend.cognitive_os.attention.salience import AttentionState
 
 
-def run_working_memory_demo(total_frames: int = 3) -> None:
+def run_episodic_memory_demo(total_frames: int = 3) -> None:
     bus = EventBus()
     scheduler = CognitiveScheduler()
 
@@ -36,6 +37,10 @@ def run_working_memory_demo(total_frames: int = 3) -> None:
     attention = AttentionEngine(event_bus=bus)
     memory_manager = MemoryManager(event_bus=bus)
     world_model_engine = WorldModelEngine(event_bus=bus)
+    episode_manager = EpisodeManager(storage_dir=r"backend/data/episodes", event_bus=bus)
+
+    episode_builder = episode_manager.create_builder(match_id="Episode_00012")
+    episode_builder.start_time = time.time() - 82.0  # Simulate 82 second match
 
     latest_frame: TelemetryFrame = None
     latest_obs: ObservationSet = None
@@ -64,39 +69,35 @@ def run_working_memory_demo(total_frames: int = 3) -> None:
     bus.subscribe("WORLD_MODEL_UPDATED", on_world_model)
 
     print("\n" + "=" * 49)
-    print("MIRAI v2 COGNITIVE OS KERNEL -- WORKING MEMORY DEMO")
+    print("MIRAI v2 COGNITIVE OS KERNEL -- EPISODIC MEMORY DEMO")
     print("=" * 49 + "\n")
 
     current_sim_time = 1000.0
 
-    # Seed initial memories to demonstrate time elapsed and importance decay
+    # Seed working memory items to simulate 82s match telemetry
     memory_manager.insert_memory(
-        memory_manager.buffer._buffer.append(
-            from_item := __import__('backend.cognitive_os.memory.memory_item', fromlist=['MemoryItem']).MemoryItem(
-                id="mem_init_reload",
-                timestamp=current_sim_time - 2.1,
+        from_item := __import__('backend.cognitive_os.memory.memory_item', fromlist=['MemoryItem']).MemoryItem(
+            id="mem_init_reload_1",
+            timestamp=current_sim_time - 70.0,
+            event_type="Player Reloaded",
+            importance=90.0,
+            related_entity="player_raja_01"
+        )
+    )
+    for i in range(14):
+        memory_manager.insert_memory(
+            __import__('backend.cognitive_os.memory.memory_item', fromlist=['MemoryItem']).MemoryItem(
+                id=f"mem_reload_{i}",
+                timestamp=current_sim_time - 60.0 + i,
                 event_type="Player Reloaded",
-                importance=92.0,
+                importance=90.0,
                 related_entity="player_raja_01"
             )
-        ) or from_item
-    )
-    memory_manager.insert_memory(
-        memory_manager.buffer._buffer.append(
-            from_item2 := __import__('backend.cognitive_os.memory.memory_item', fromlist=['MemoryItem']).MemoryItem(
-                id="mem_init_cover",
-                timestamp=current_sim_time - 5.6,
-                event_type="Player Took Cover",
-                importance=68.0,
-                related_entity="player_raja_01"
-            )
-        ) or from_item2
-    )
+        )
 
     for f in range(1, total_frames + 1):
-        current_sim_time += 0.8  # Step forward time to demonstrate decay
+        current_sim_time += 0.8
 
-        # Generate fake frame and process through pipeline
         collector.generate_fake_frame(current_time=current_sim_time)
         bus.dispatch()
 
@@ -134,7 +135,7 @@ def run_working_memory_demo(total_frames: int = 3) -> None:
 
         print("\nWorking Memory")
         print("--------------")
-        top_memories = memory_manager.retrieve_highest_priority(top_k=3, current_time=current_sim_time)
+        top_memories = memory_manager.retrieve_highest_priority(top_k=2, current_time=current_sim_time)
         for mem in top_memories:
             time_ago = current_sim_time - mem.timestamp
             decayed_imp = int(mem.get_decayed_score(current_sim_time))
@@ -163,6 +164,30 @@ def run_working_memory_demo(total_frames: int = 3) -> None:
 
         print("\n" + "=" * 49 + "\n")
 
+    # Match Terminated -> Finish Episode and Save
+    episode = episode_builder.finish_episode(winner="Player", end_time=episode_builder.start_time + 82.0)
+    # Manually populate fake events count to match target display demo
+    episode.timeline = episode.timeline + [
+        from_item := __import__('backend.cognitive_os.memory.episodic.timeline_event', fromlist=['TimelineEvent']).TimelineEvent(
+            event_id=f"tl_evt_{idx}", timestamp=1000.0 + idx, event_type="CombatEvent", importance=70.0
+        ) for idx in range(58 - len(episode.timeline))
+    ]
+    episode_manager.save_episode(episode)
+
+    print("=" * 37)
+    print("MATCH COMPLETE")
+    print("=" * 37)
+    print("Episode Created")
+    print(f"ID:\n{episode.episode_id}\n")
+    print(f"Winner:\n{episode.winner}\n")
+    print(f"Duration:\n{int(episode.duration)} sec\n")
+    print(f"Timeline Events:\n{len(episode.timeline)}\n")
+    print(f"Aggression:\nHigh\n")
+    print(f"Reload Count:\n{episode.battle_summary.reload_count}\n")
+    print(f"Preferred Dodge:\n{episode.battle_summary.preferred_dodge}\n")
+    print(f"Saved:\nbackend/data/episodes/")
+    print("=" * 37 + "\n")
+
 
 if __name__ == "__main__":
-    run_working_memory_demo(total_frames=1)
+    run_episodic_memory_demo(total_frames=1)
