@@ -3,8 +3,8 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0"/>
-  <title>MIRAI v2 — Developer Tools & Cognitive Dashboard</title>
-  <meta name="description" content="Real-time Cognitive OS Visualization Suite for MIRAI AI Engine." />
+  <title>MIRAI v2 — Demo Game & AI Debugger Vertical Slice</title>
+  <meta name="description" content="Playable 2D Combat Slice with Real-Time XAI Reasoning Side Panel and Frame Debugger." />
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -16,159 +16,117 @@
     <header class="header-bar glass">
       <div class="brand">
         <div class="pulse-dot"></div>
-        <h1>MIRAI <span>v2 Cognitive OS</span></h1>
+        <h1>MIRAI <span>v2 Demo Game & AI Debugger</span></h1>
       </div>
       <div class="status-badges">
-        <span class="badge badge-success">ENGINE ACTIVE</span>
-        <span class="badge badge-primary">FPS: 60</span>
-        <span class="badge badge-purple">LATENCY: 4.2ms</span>
+        <span class="badge badge-success">GAME LOOP: 60 FPS</span>
+        <span class="badge badge-primary">BOSS AI ACTIVE</span>
+        <span class="badge badge-purple">XAI EXPLAINABILITY ON</span>
       </div>
     </header>
 
-    <!-- Main Grid Layout -->
-    <main class="grid-layout">
-      <!-- 1. Live Cognitive Graph Panel -->
-      <section class="card glass" id="cognitive-graph-card">
+    <!-- Main Game & AI Debugger Grid -->
+    <main class="game-grid">
+      <!-- Left Column: 2D Combat Arena -->
+      <section class="card glass" id="arena-card">
         <div class="card-header">
-          <h2>🌐 Live Cognitive Graph</h2>
-          <span class="sub-text">Frame-by-Frame Subsystem Flow</span>
+          <h2>⚔️ Playable Combat Arena</h2>
+          <div class="game-controls">
+            <button class="btn btn-primary" id="btn-start-game" onclick="startGame()">Start Battle</button>
+            <button class="btn btn-warning" id="btn-pause-game" onclick="togglePauseGame()">Pause / Debug</button>
+            <button class="btn btn-secondary" onclick="resetGame()">Reset</button>
+          </div>
         </div>
-        <div class="graph-flow" id="cognitive-flow-nodes">
-          <div class="flow-node active" id="node-perception">
-            <div class="node-icon">👁️</div>
-            <div class="node-title">Perception</div>
-            <div class="node-sub">Entity Tracking</div>
+
+        <!-- Combat HUD Bars -->
+        <div class="hud-bars">
+          <div class="hud-box">
+            <div class="hud-label"><span>Boss HP (MIRAI AI)</span> <span id="boss-hp-text">100 / 100</span></div>
+            <div class="hp-bar-bg"><div class="hp-bar-fill boss-fill" id="boss-hp-fill" style="width: 100%;"></div></div>
           </div>
-          <div class="flow-arrow">➔</div>
-          <div class="flow-node active" id="node-memory">
-            <div class="node-icon">🧠</div>
-            <div class="node-title">Memory</div>
-            <div class="node-sub">Vector Cosine</div>
+          <div class="hud-box">
+            <div class="hud-label"><span>Player HP (Human)</span> <span id="player-hp-text">100 / 100</span></div>
+            <div class="hp-bar-bg"><div class="hp-bar-fill player-fill" id="player-hp-fill" style="width: 100%;"></div></div>
           </div>
-          <div class="flow-arrow">➔</div>
-          <div class="flow-node active" id="node-prediction">
-            <div class="node-icon">🔮</div>
-            <div class="node-title">Prediction</div>
-            <div class="node-sub">XGBoost + LSTM</div>
-          </div>
-          <div class="flow-arrow">➔</div>
-          <div class="flow-node active" id="node-planning">
-            <div class="node-icon">🎯</div>
-            <div class="node-title">Planning</div>
-            <div class="node-sub">Beam Search</div>
-          </div>
-          <div class="flow-arrow">➔</div>
-          <div class="flow-node active" id="node-decision">
-            <div class="node-icon">⚡</div>
-            <div class="node-title">Decision</div>
-            <div class="node-sub">Utility Cortex</div>
+        </div>
+
+        <!-- 2D Canvas Battle Arena -->
+        <div class="canvas-wrapper">
+          <canvas id="combat-canvas" width="640" height="380"></canvas>
+          <div class="controls-hint">
+            <span><strong>Controls:</strong> WASD / Arrows to Move | <strong>J:</strong> Attack | <strong>K:</strong> Heavy Attack | <strong>L:</strong> Dodge | <strong>H:</strong> Heal</span>
           </div>
         </div>
       </section>
 
-      <!-- 2. KPI Benchmark Dashboard Panel -->
-      <section class="card glass" id="kpi-card">
+      <!-- Right Column: Live AI Thinking Panel & Reasoning Trace -->
+      <section class="card glass" id="ai-thinking-card">
         <div class="card-header">
-          <h2>📊 Benchmark KPI Dashboard</h2>
-          <span class="sub-text">Empirical Subsystem Performance</span>
+          <h2>🧠 Live AI Reasoning Panel</h2>
+          <span class="sub-text">"Watch the AI Think"</span>
         </div>
-        <div class="kpi-grid">
-          <div class="kpi-box">
-            <div class="kpi-val" id="kpi-winrate">93.4%</div>
-            <div class="kpi-lbl">Win Rate</div>
+
+        <div class="thinking-panel-content">
+          <!-- 1. Prediction Box -->
+          <div class="xai-box">
+            <div class="xai-title">🔮 Prediction</div>
+            <div class="xai-value" id="xai-pred">Reload <span class="highlight">(94%)</span></div>
           </div>
-          <div class="kpi-box">
-            <div class="kpi-val" id="kpi-latency">4.2 ms</div>
-            <div class="kpi-lbl">Avg Latency</div>
+
+          <!-- 2. Goal Box -->
+          <div class="xai-box">
+            <div class="xai-title">🎯 Goal</div>
+            <div class="xai-value" id="xai-goal">Pressure Player</div>
           </div>
-          <div class="kpi-box">
-            <div class="kpi-val" id="kpi-accuracy">91.0%</div>
-            <div class="kpi-lbl">Prediction Acc</div>
+
+          <!-- 3. Plan Box -->
+          <div class="xai-box">
+            <div class="xai-title">📜 Plan</div>
+            <div class="xai-value" id="xai-plan">Plan A (Dash ➔ Heavy Attack)</div>
           </div>
-          <div class="kpi-box">
-            <div class="kpi-val" id="kpi-planner">88.0%</div>
-            <div class="kpi-lbl">Planner Success</div>
+
+          <!-- 4. Threat Box -->
+          <div class="xai-box">
+            <div class="xai-title">⚠️ Threat Score</div>
+            <div class="xai-value" id="xai-threat">Healing = <span class="highlight-red">0.91</span></div>
           </div>
-          <div class="kpi-box">
-            <div class="kpi-val" id="kpi-hits">145</div>
-            <div class="kpi-lbl">Memory Hits</div>
+
+          <!-- 5. Memory Hit Box -->
+          <div class="xai-box">
+            <div class="xai-title">💾 Retrieved Experience</div>
+            <div class="xai-value" id="xai-memory">Episode 102 (Cosine Sim 0.94)</div>
           </div>
-          <div class="kpi-box">
-            <div class="kpi-val" id="kpi-retrieval">0.45 ms</div>
-            <div class="kpi-lbl">Retrieval Time</div>
+
+          <!-- 6. Skill Rating Box -->
+          <div class="xai-box">
+            <div class="xai-title">⭐ Player Skill Rating</div>
+            <div class="xai-value" id="xai-skill">Expert (Score: 92)</div>
+          </div>
+
+          <!-- 7. Decision Audit Box -->
+          <div class="xai-box decision-highlight-box">
+            <div class="xai-title">⚡ Final Boss Action</div>
+            <div class="xai-value decision-val" id="xai-action">Dash</div>
           </div>
         </div>
       </section>
 
-      <!-- 3. Memory Inspector Panel -->
-      <section class="card glass" id="memory-inspector-card">
+      <!-- Bottom Span: Frame Debugger & Replay Viewer -->
+      <section class="card glass" id="frame-debugger-card">
         <div class="card-header">
-          <h2>🔍 Memory Inspector</h2>
-          <div class="tabs">
-            <button class="tab-btn active" onclick="selectMemoryTab('working')">Working</button>
-            <button class="tab-btn" onclick="selectMemoryTab('episodic')">Episodic</button>
-            <button class="tab-btn" onclick="selectMemoryTab('semantic')">Semantic</button>
-            <button class="tab-btn" onclick="selectMemoryTab('vector')">Vector</button>
-          </div>
-        </div>
-        <div class="tab-content" id="memory-tab-content">
-          <!-- Dynamic JSON / Key Value Content -->
-        </div>
-      </section>
-
-      <!-- 4. Planner Inspector Panel -->
-      <section class="card glass" id="planner-inspector-card">
-        <div class="card-header">
-          <h2>🎯 Strategic Planner Inspector</h2>
-          <span class="sub-text" id="active-goal-lbl">Goal: Pressure Player</span>
-        </div>
-        <div class="progress-bar-container">
-          <div class="progress-bar-fill" id="plan-progress-fill" style="width: 50%;"></div>
-        </div>
-        <div class="steps-list" id="plan-steps-list">
-          <div class="step-item step-done">✓ 1. Dash (Completed)</div>
-          <div class="step-item step-exec">⚡ 2. Heavy Attack (Executing...)</div>
-          <div class="step-item step-pending">⌛ 3. Block (Pending)</div>
-          <div class="step-item step-pending">⌛ 4. Retreat (Pending)</div>
-        </div>
-      </section>
-
-      <!-- 5. Prediction Timeline Chart Panel -->
-      <section class="card glass" id="timeline-card">
-        <div class="card-header">
-          <h2>📈 Prediction Confidence Timeline</h2>
-          <span class="sub-text">Time vs Confidence %</span>
-        </div>
-        <div class="chart-container" id="timeline-chart">
-          <svg class="timeline-svg" viewBox="0 0 500 150">
-            <polyline fill="none" stroke="#3b82f6" stroke-width="3" points="20,110 100,90 200,60 300,30 400,45 480,25" />
-            <circle cx="20" cy="110" r="5" fill="#3b82f6" />
-            <circle cx="100" cy="90" r="5" fill="#3b82f6" />
-            <circle cx="200" cy="60" r="5" fill="#3b82f6" />
-            <circle cx="300" cy="30" r="5" fill="#10b981" />
-            <circle cx="400" cy="45" r="5" fill="#3b82f6" />
-            <circle cx="480" cy="25" r="5" fill="#10b981" />
-          </svg>
-        </div>
-      </section>
-
-      <!-- 6. Replay Viewer Panel -->
-      <section class="card glass" id="replay-viewer-card">
-        <div class="card-header">
-          <h2>🎬 Replay Viewer & Frame Debugger</h2>
-          <div class="controls">
-            <button class="btn btn-sm" id="btn-play-pause">Play / Pause</button>
-            <span class="sub-text" id="frame-lbl">Frame: 24 / 300</span>
-          </div>
+          <h2>🎬 Frame Debugger & Replay Viewer</h2>
+          <span class="sub-text" id="debugger-frame-lbl">Frame: 130 / 300</span>
         </div>
         <div class="scrubber-bar">
-          <input type="range" min="1" max="300" value="24" id="frame-scrubber" oninput="updateReplayFrame(this.value)" />
+          <input type="range" min="1" max="300" value="130" id="debugger-scrubber" oninput="debugFrameScrub(this.value)" />
         </div>
-        <div class="replay-inspection-box" id="replay-box">
-          <div class="audit-row"><strong>Target Action:</strong> Heavy Attack</div>
-          <div class="audit-row"><strong>Fused Prediction:</strong> Reload (94% Conf)</div>
-          <div class="audit-row"><strong>Retrieved Vector Match:</strong> Episode 102 (Cosine 0.94)</div>
-          <div class="audit-row"><strong>Audit Reasoning:</strong> "Observed in 78 similar historical sequences. Fused confidence 94%."</div>
+        <div class="debugger-trace-grid" id="debugger-trace-grid">
+          <div class="trace-cell"><strong>Frame 130</strong> ➔ Snapshot Captured</div>
+          <div class="trace-cell"><strong>Prediction:</strong> Reload (94%)</div>
+          <div class="trace-cell"><strong>Memory:</strong> Episode 102</div>
+          <div class="trace-cell"><strong>Threat:</strong> Healing (0.91)</div>
+          <div class="trace-cell"><strong>Plan:</strong> Interrupt & Pressure</div>
+          <div class="trace-cell"><strong>Decision:</strong> Dash ➔ Heavy Attack</div>
         </div>
       </section>
     </main>
