@@ -2,7 +2,7 @@
 
 Decides WHAT high-level goal MIRAI should pursue based on WorldModel, WorkingMemory, SemanticMemory, and Prediction:
 Rules:
-- Prediction (Player will Reload, conf >= 70%) -> PRESSURE
+- Prediction (Player will Reload/RELOAD, conf >= 70%) -> PRESSURE
 - Boss HP < 20% -> HEAL
 - Player Low HP < 25% -> FINISH
 - Player Reloading -> PRESSURE
@@ -50,7 +50,7 @@ class GoalManager:
         is_player_hidden = not world_model.visible_entities
 
         # 1. Rule: Prediction Engine predicts Player will Reload (conf >= 0.70) -> PRESSURE
-        if prediction and prediction.action == "Reload" and prediction.confidence >= 0.70:
+        if prediction and prediction.action.upper() in ("RELOAD", "RELOAD_HABIT") and prediction.confidence >= 0.70:
             goal = Goal(
                 id=f"g_{int(world_model.timestamp*1000)}",
                 type="PRESSURE",

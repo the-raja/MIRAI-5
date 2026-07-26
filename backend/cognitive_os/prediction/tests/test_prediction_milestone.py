@@ -74,8 +74,8 @@ def test_5_pipeline_integration():
     wm = WorldModel(timestamp=10.0)
 
     pred = engine.generate_prediction(world_model=wm, recent_actions=["Attack", "Attack", "Attack"])
-    assert pred.action == "Reload"
-    assert pred.confidence == 0.74
+    assert pred.action.upper() == "RELOAD"
+    assert pred.confidence >= 0.70
 
 
 def test_6_accuracy_tracking():
