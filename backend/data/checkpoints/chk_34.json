@@ -1,0 +1,35 @@
+{
+  "checkpoint_id": "chk_34",
+  "timestamp": 1085.0,
+  "version": "v1.0.1",
+  "knowledge_items": [
+    {
+      "type": "PlayerReloadHabit",
+      "confidence": 0.94
+    }
+  ],
+  "statistics": {
+    "total_episodes_analyzed": 1,
+    "prediction_accuracy": 0.96,
+    "decision_accuracy": 0.88,
+    "goal_accuracy": 0.85,
+    "average_fight_time": 85.0,
+    "average_damage": 450.0,
+    "counter_success_rate": 0.8,
+    "memory_growth": 0,
+    "knowledge_growth": 4,
+    "learning_speed": 2.0
+  },
+  "parameters": {
+    "reload_threshold": 3
+  },
+  "utility_weights": {
+    "HeavyAttack": 60.0,
+    "LightAttack": 70.0,
+    "Heal": 30.0
+  },
+  "prediction_metrics": {
+    "accuracy": 0.96,
+    "precision": 0.8
+  }
+}
