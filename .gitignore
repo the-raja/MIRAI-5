@@ -1,0 +1,9 @@
+__pycache__/
+.venv/
+node_modules/
+logs/
+models/
+*.db
+*.sqlite
+*.faiss
+.env
