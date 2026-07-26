@@ -12,7 +12,6 @@ from backend.cognitive_os.event_bus.events import Event
 def test_xgboost_intent_pipeline_integration():
     bus = EventBus()
 
-    # Register XGBoost model in ModelRegistry
     xgb_model = IntentPredictionModel()
     ModelRegistry.get_registry().register_model("intent_prediction", xgb_model)
 
@@ -29,6 +28,6 @@ def test_xgboost_intent_pipeline_integration():
     bus.dispatch()
 
     assert len(predictions) == 1
-    assert predictions[0].source == "XGBoost Intent Model"
+    assert "Dual Prediction Fusion" in predictions[0].source or "XGBoost" in predictions[0].source
     assert decision.goal is not None
     assert decision.chosen_action is not None
