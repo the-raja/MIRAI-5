@@ -1,0 +1,17 @@
+{
+  "experiment_id": 1,
+  "timestamp": 1785067563.7297907,
+  "model_name": "Baseline Predictor",
+  "dataset_version": "v5",
+  "accuracy": 0.74,
+  "precision": 0.71,
+  "recall": 0.72,
+  "training_time_seconds": 0.03,
+  "hyperparameters": {},
+  "metadata": {
+    "train_samples": 18240,
+    "val_samples": 2340,
+    "inference_time_ms": 0.3,
+    "status": "PASS"
+  }
+}
