@@ -1,8 +1,8 @@
 """DecisionEngine module.
 
-Coordinates GoalManager and UtilitySystem to make explainable, 100% deterministic decisions.
-Always chooses the highest utility action.
-If scores are tied, uses deterministic tie-breaking (alphabetical action name priority). Zero randomness.
+Coordinates GoalManager, PredictionEngine, and UtilitySystem to make explainable, 100% deterministic decisions.
+Cascade:
+Semantic Memory -> Prediction Engine -> Goal Manager -> Utility AI -> Decision
 Publishes DECISION_MADE events onto the EventBus.
 """
 
@@ -13,6 +13,8 @@ from backend.cognitive_os.decision.goal_manager import GoalManager
 from backend.cognitive_os.decision.utility_action import UtilityAction, create_standard_action_set
 from backend.cognitive_os.decision.utility_system import UtilitySystem, ScoredUtilityAction
 from backend.cognitive_os.decision.reasoning_trace import ReasoningTraceModel
+from backend.cognitive_os.prediction.prediction_engine import PredictionEngine
+from backend.cognitive_os.prediction.prediction import Prediction
 from backend.cognitive_os.context.world_model import WorldModel
 from backend.cognitive_os.memory.memory_manager import MemoryManager
 from backend.cognitive_os.memory.semantic.semantic_manager import SemanticManager
@@ -24,6 +26,7 @@ class DecisionEngine:
     def __init__(self, event_bus: Optional[EventBus] = None) -> None:
         self.goal_manager = GoalManager(event_bus=event_bus)
         self.utility_system = UtilitySystem()
+        self.prediction_engine = PredictionEngine(event_bus=event_bus)
         self.candidate_actions: List[UtilityAction] = create_standard_action_set()
         self.event_bus = event_bus
 
@@ -38,18 +41,28 @@ class DecisionEngine:
         self,
         world_model: WorldModel,
         memory_manager: Optional[MemoryManager] = None,
-        semantic_manager: Optional[SemanticManager] = None
+        semantic_manager: Optional[SemanticManager] = None,
+        recent_actions: Optional[List[str]] = None
     ) -> Decision:
-        """Processes Goal, World Model, Working Memory, and Semantic Memory to select the optimal Action deterministically."""
+        """Processes Prediction Engine, Goal, World Model, Working Memory, and Semantic Memory to select optimal Action."""
         
-        # 1. Determine active Goal
+        # 1. Generate Prediction via PredictionEngine
+        prediction: Prediction = self.prediction_engine.generate_prediction(
+            world_model=world_model,
+            memory_manager=memory_manager,
+            semantic_manager=semantic_manager,
+            recent_actions=recent_actions
+        )
+
+        # 2. Determine active Goal (passing prediction)
         active_goal = self.goal_manager.evaluate_goal(
             world_model=world_model,
             memory_manager=memory_manager,
-            semantic_manager=semantic_manager
+            semantic_manager=semantic_manager,
+            prediction=prediction
         )
 
-        # 2. Evaluate and score all candidate actions
+        # 3. Evaluate and score all candidate actions
         scored_actions = self.utility_system.evaluate_all_actions(
             candidate_actions=self.candidate_actions,
             active_goal=active_goal,
@@ -58,10 +71,10 @@ class DecisionEngine:
             semantic_manager=semantic_manager
         )
 
-        # 3. Deterministic Sorting: Primary by final_score (descending), Secondary by action name (alphabetical)
+        # 4. Deterministic Sorting: Primary by final_score (descending), Secondary by action name (alphabetical)
         scored_actions.sort(key=lambda sa: (-sa.final_score, sa.action.name.lower()))
 
-        # 4. Select winning action
+        # 5. Select winning action
         winning_scored = scored_actions[0] if scored_actions else ScoredUtilityAction(
             action=self.candidate_actions[-1], base_score=20.0, final_score=20.0
         )
@@ -75,7 +88,10 @@ class DecisionEngine:
 
         # Build ReasoningTraceModel
         scores_map = {sa.action.name: round(sa.final_score, 1) for sa in scored_actions}
-        reasons_list = [f"Goal Driver: {active_goal.reason}"]
+        reasons_list = [
+            f"Prediction: Player will {prediction.action} ({int(prediction.confidence*100)}% conf from {prediction.source})",
+            f"Goal Driver: {active_goal.reason}"
+        ]
         if winning_scored.rationale:
             reasons_list.extend(winning_scored.rationale.split(" | "))
 
