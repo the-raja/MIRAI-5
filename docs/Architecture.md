@@ -1,196 +1,60 @@
-# MIRAI v2 — Cognitive OS Architecture (FROZEN SPECIFICATION)
+# MIRAI v2 — System Architecture Specification
 
-> **Architectural Freeze Notice:**  
-> The 14-stage cognitive pipeline documented herein is **FROZEN**. All future development, modular implementations, abstractions, and tests MUST strictly adhere to this exact control flow.
+## 1. Purpose & Core Vision
+MIRAI is an autonomous, explainable AI engine designed for real-time video game boss combat and adaptive non-player characters (NPCs). It integrates sensing, multi-tiered memory, XGBoost & LSTM sequence prediction, threat ranking, player skill estimation, HTN & Behavior Tree planning, and Explainable AI (XAI) reasoning traces.
 
 ---
 
-## 1. Frozen 14-Stage Cognitive Pipeline
+## 2. End-to-End System Pipeline
 
-```
-                       ┌─────────────────────────┐
-                       │         PLAYER          │
-                       └────────────┬────────────┘
-                                    │
-                                    ▼
-                       ┌─────────────────────────┐
-                       │        TELEMETRY        │
-                       └────────────┬────────────┘
-                                    │
-                                    ▼
-                       ┌─────────────────────────┐
-                       │       PERCEPTION        │
-                       └────────────┬────────────┘
-                                    │
-                                    ▼
-                       ┌─────────────────────────┐
-                       │        ATTENTION        │
-                       └────────────┬────────────┘
-                                    │
-                                    ▼
-                       ┌─────────────────────────┐
-                       │       WORLD MODEL       │
-                       └────────────┬────────────┘
-                                    │
-                                    ▼
-                       ┌─────────────────────────┐
-                       │         MEMORY          │
-                       └────────────┬────────────┘
-                                    │
-                                    ▼
-                       ┌─────────────────────────┐
-                       │       PREDICTION        │
-                       └────────────┬────────────┘
-                                    │
-                                    ▼
-                       ┌─────────────────────────┐
-                       │      GOAL MANAGER       │
-                       └────────────┬────────────┘
-                                    │
-                                    ▼
-                       ┌─────────────────────────┐
-                       │       UTILITY AI        │
-                       └────────────┬────────────┘
-                                    │
-                                    ▼
-                       ┌─────────────────────────┐
-                       │         PLANNER         │
-                       └────────────┬────────────┘
-                                    │
-                                    ▼
-                       ┌─────────────────────────┐
-                       │      MOTOR PLANNER      │
-                       └────────────┬────────────┘
-                                    │
-                                    ▼
-                       ┌─────────────────────────┐
-                       │       GAME ENGINE       │
-                       └────────────┬────────────┘
-                                    │
-                                    ▼
-                       ┌─────────────────────────┐
-                       │        LEARNING         │
-                       └────────────┬────────────┘
-                                    │
-                                    ▼
-                       ┌─────────────────────────┐
-                       │    PERSISTENT MEMORY    │
-                       └─────────────────────────┘
+```mermaid
+graph TD
+    P[Perception Engine] --> WM[Working Memory]
+    WM --> WM_MODEL[World Model]
+    WM_MODEL --> PRED[Prediction Engine: XGBoost + LSTM]
+    WM_MODEL --> VM[Vector Memory: Dense Summary Embeddings]
+    PRED --> THREAT[Threat Ranking Engine: 17 Features]
+    VM --> ER[Experience Retrieval]
+    THREAT --> PSR[Player Skill Rating: 0-100 Score]
+    ER --> PSR
+    PSR --> GM[Goal Manager]
+    GM --> PLANNER[Planner v2: HTN + Behavior Tree]
+    PLANNER --> UTIL[Utility AI Cortex]
+    UTIL --> EXEC[Decision Execution]
+    EXEC --> LEARN[Learning & Adaptation Engine]
 ```
 
 ---
 
-## 2. Formal Module Specifications
+## 3. Core Subsystem Architecture
 
-### Module 1: Player
-- **Purpose:** Provide external real-time combat actions, inputs, and behavior patterns.
-- **Input:** Human inputs (mouse, keyboard, controller) or Bot AI decision cycles.
-- **Output:** Raw character state (movement commands, attack triggers, item usage).
-- **Frequency:** Continuous / Event-driven.
-
----
-
-### Module 2: Telemetry
-- **Purpose:** Ingest, record, and timestamp raw combat state streams from the game session.
-- **Input:** Raw game state (positions $(x, y, z)$, velocity vectors, HP, stamina, ammo, equipped gear, combat events).
-- **Output:** Timestamped Raw Telemetry Frames (`TelemetryFrame`).
-- **Frequency:** 60 Hz.
-
----
-
-### Module 3: Perception
-- **Purpose:** Observe world state and transform raw telemetry into normalized feature vectors.
-- **Input:** `TelemetryFrame` stream.
-- **Output:** Cleaned `ObservationState` (normalized spatial distances, movement deltas, health percentages, reload counters, stance).
-- **Frequency:** 60 Hz.
+| Subsystem | Responsibilities | Key Class / Interface |
+| :--- | :--- | :--- |
+| **Sensing & Perception** | Entity tracking, spatial metrics, frame buffer | `PerceptionManager`, `SensoryCollector` |
+| **Working Memory** | Short-term state, attention decay, focus item | `WorkingMemoryManager`, `AttentionFocus` |
+| **Episodic Memory** | Combat match log storage & episode builder | `EpisodicMemoryManager`, `EpisodeStorage` |
+| **Semantic Memory** | Knowledge graphs, rule pattern extraction | `SemanticMemoryManager`, `KnowledgeGraph` |
+| **Vector Memory** | Dense spatial embeddings & FAISS top-K retrieval | `VectorStore`, `SimilaritySearchEngine` |
+| **Prediction Engine** | XGBoost intent prediction + LSTM sequence fusion | `PredictionFusionEngine`, `LSTMTemporalModel` |
+| **Threat Ranking** | 17-feature XGBoost Threat Ranker | `ThreatRanker`, `XGBoostThreatModel` |
+| **Skill Rating** | 0-100 player skill score & strategy adaptation | `SkillModel`, `BayesianSkillRating` |
+| **Planner v2** | HTN task networks + Behavior Tree execution | `HTNPlanner`, `SequenceBTNode`, `Blackboard` |
+| **Explainability (XAI)** | Multi-subsystem reasoning trace explanation cards | `ExplanationEngine`, `ReasoningTrace` |
 
 ---
 
-### Module 4: Attention
-- **Purpose:** Prioritize observations, isolate critical tactical triggers, and filter cognitive noise.
-- **Input:** `ObservationState`.
-- **Output:** `SalientEvents` & `PriorityTargets` (highlighted high-threat actors, critical low-HP allies/enemies, impending attacks).
-- **Frequency:** 60 Hz (or event-triggered on state changes).
+## 4. API & Quickstart Code Example
 
----
+```python
+from sdk.python.mirai_sdk import MiraiSDK
 
-### Module 5: World Model
-- **Purpose:** Maintain spatial, topological, and visibility graph relationships of the battle arena.
-- **Input:** `ObservationState`, `SalientEvents`, and spatial map grid.
-- **Output:** `WorldGraph` (nodes: cover locations, combatants, choke points; edges: line-of-sight, distance, accessibility, threat zones).
-- **Frequency:** 30 Hz.
+# 1. Initialize MIRAI Engine Session
+runtime = MiraiSDK(session_id="boss_fight_01")
 
----
+# 2. 3-Step Runtime Loop
+runtime.observe({"timestamp": 12.0, "metadata": {"player_hp": 34.0}})
+chosen_action = runtime.tick()
+print(f"Chosen Action: {chosen_action}")
 
-### Module 6: Memory (Episodic Retrieval)
-- **Purpose:** Query historical encounter database to retrieve relevant past experiences and successful counter-strategies.
-- **Input:** Current `ObservationState` embedding vector.
-- **Output:** `RetrievedMemories` (Top-$K$ similar historical encounters, strategy confidence scores, past player failure/success logs).
-- **Frequency:** 10 Hz / Event-driven (triggered on engagement or tactical phase changes).
-
----
-
-### Module 7: Prediction
-- **Purpose:** Forecast short-term player movements, immediate actions/intents, and multi-agent squad threat rankings.
-- **Input:** Sequence of `ObservationState` (history buffer), `WorldGraph`, and `RetrievedMemories`.
-- **Output:** `PredictionBundle`:
-  - **Movement:** Trajectory sequence $(x_{t+1}, y_{t+1}, \dots, x_{t+n}, y_{t+n})$.
-  - **Intent:** Probabilities over actions (`Reload`, `Heal`, `Attack`, `Parry`, `Retreat`).
-  - **Threat Ranking:** Ranked list of target entities with threat weights.
-- **Frequency:** 20 Hz (Movement) / 10 Hz (Intent & Threat).
-
----
-
-### Module 8: Goal Manager
-- **Purpose:** Select high-level strategic objectives based on tactical priorities, world topology, and predictions.
-- **Input:** `PredictionBundle`, `WorldGraph`, `SalientEvents`.
-- **Output:** Active `StrategicGoal` (e.g., `Eliminate_Medic`, `Retreat_To_Cover`, `Flank_Ranger`, `Observe_Pattern`, `Defend_Position`).
-- **Frequency:** 5 Hz / Event-triggered on major combat shifts.
-
----
-
-### Module 9: Utility AI
-- **Purpose:** Evaluate and score candidate action options against goal constraints, memory weights, and utility curves to pick the optimal tactical action.
-- **Input:** Active `StrategicGoal`, `PredictionBundle`, `WorldGraph`, `RetrievedMemories`.
-- **Output:** `ScoredActionPlan` + `ExplainabilityAudit` (chosen action, score array, feature weightings, exact rationale).
-- **Frequency:** 10 Hz.
-
----
-
-### Module 10: Planner
-- **Purpose:** Decompose chosen action plan into long-term task sequences (HTN) and tick-by-tick state execution trees (Behavior Tree).
-- **Input:** `ScoredActionPlan`.
-- **Output:** `ExecutableTaskSequence` (ordered sub-tasks: `ApproachCover` $\rightarrow$ `CastShield` $\rightarrow$ `FireBurst`).
-- **Frequency:** 30 Hz.
-
----
-
-### Module 11: Motor Planner
-- **Purpose:** Convert abstract tactical sub-tasks into precise kinematic movement vectors, rotation angles, attack timing, and input triggers.
-- **Input:** `ExecutableTaskSequence`, current boss kinematic state.
-- **Output:** `MotorCommand` (steering vector, target rotation, trigger commands, animation cues).
-- **Frequency:** 60 Hz.
-
----
-
-### Module 12: Game Engine
-- **Purpose:** Simulate or execute boss motor commands in the game environment, resolve physics/collisions, and generate updated combat state.
-- **Input:** `MotorCommand`.
-- **Output:** Updated match simulation state, hit registrations, environment deltas.
-- **Frequency:** 60 Hz (Game loop).
-
----
-
-### Module 13: Learning
-- **Purpose:** Evaluate post-match performance, compute prediction loss metrics (RMSE, Accuracy), and update internal model parameters.
-- **Input:** Complete match telemetry log, prediction logs, victory/defeat outcome.
-- **Output:** Model parameter updates, model version checkpoints, feature importance updates.
-- **Frequency:** Post-Match (Async Batch).
-
----
-
-### Module 14: Persistent Memory
-- **Purpose:** Permanently store player profiles, Bayesian skill estimates, historical vector embeddings, and strategy confidence matrices across sessions.
-- **Input:** Post-match learning evaluation and updated player embeddings.
-- **Output:** Updated persistent storage state (FAISS indexes, SQLite/DB player records, model weights).
-- **Frequency:** Post-Match / Cross-Session.
+runtime.learn({"outcome": "VICTORY", "damage_dealt": 95.0})
+```
