@@ -1,0 +1,50 @@
+[
+  {
+    "id": "cyber_knight",
+    "name": "Cyber Knight",
+    "role": "Melee Duelist",
+    "voice": "Tactical Cyber Voice",
+    "abilities": ["Plasma Slash", "Dash Strike", "Shield Block"],
+    "animations": ["idle", "run", "attack", "heavy_attack", "dash", "ultimate", "death"],
+    "portrait": "/assets/portraits/cyber_knight.png",
+    "model": "/assets/models/cyber_knight.glb",
+    "ultimate": "Cyber Overload Slash",
+    "description": "Agile close-quarters specialist with rapid plasma sword combos."
+  },
+  {
+    "id": "shadow_ninja",
+    "name": "Shadow Ninja",
+    "role": "Assassin",
+    "voice": "Whispering Blade",
+    "abilities": ["Shuriken Fan", "Shadow Step", "Smoke Screen"],
+    "animations": ["idle", "run", "attack", "dash", "ultimate", "death"],
+    "portrait": "/assets/portraits/shadow_ninja.png",
+    "model": "/assets/models/shadow_ninja.glb",
+    "ultimate": "Omnislash Shadow Burst",
+    "description": "High mobility flanker specializing in quick dodges and critical strikes."
+  },
+  {
+    "id": "heavy_paladin",
+    "name": "Heavy Paladin",
+    "role": "Tank",
+    "voice": "Deep Resonant",
+    "abilities": ["Hammer Slam", "Aegis Shield", "Fortify"],
+    "animations": ["idle", "walk", "attack", "block", "ultimate", "death"],
+    "portrait": "/assets/portraits/heavy_paladin.png",
+    "model": "/assets/models/heavy_paladin.glb",
+    "ultimate": "Earthquake Bastion",
+    "description": "Impenetrable fortress equipped with heavy counter-shields."
+  },
+  {
+    "id": "arcane_mage",
+    "name": "Arcane Mage",
+    "role": "Ranged Caster",
+    "voice": "Ethereal Echo",
+    "abilities": ["Energy Pulse", "Temporal Trap", "Blink"],
+    "animations": ["idle", "cast", "dash", "ultimate", "death"],
+    "portrait": "/assets/portraits/arcane_mage.png",
+    "model": "/assets/models/arcane_mage.glb",
+    "ultimate": "Supernova Arcane Burst",
+    "description": "Long-range spellcaster manipulating energy bursts and temporal traps."
+  }
+]
