@@ -53,6 +53,15 @@ class ActionGraph:
             success_prob=0.96,
             valid_transitions=["Heal", "Reload", "Dash"]
         )
+        self.nodes["Heal"] = ActionNode(
+            name="Heal",
+            energy_cost=20.0,
+            cooldown_sec=4.0,
+            risk=0.25,
+            expected_damage=0.0,
+            success_prob=0.85,
+            valid_transitions=["Dash", "Block", "Attack"]
+        )
         self.nodes["Attack"] = ActionNode(
             name="Attack",
             energy_cost=10.0,
